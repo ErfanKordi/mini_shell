@@ -6,7 +6,7 @@
 /*   By: amarabin <amarabin@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/28 07:43:24 by amarabin          #+#    #+#             */
-/*   Updated: 2023/11/29 08:56:30 by amarabin         ###   ########.fr       */
+/*   Updated: 2023/11/29 10:21:30 by amarabin         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,7 +62,8 @@ char				*ft_strgetbetween(const char *start, const char *end);
 
 char				**prepare_enelope_for_execve(t_env *head);
 int					unset_env(t_env **head, char *var);
-int					set_env(t_env *head, char *var, char *value);
+int					set_env(t_env **head, char *key_val_str);
 void				free_env_var_list(t_env *head);
 t_env				*init_env_var(char *envp[]);
+void				print_env_var_list(t_env *head);
 #endif

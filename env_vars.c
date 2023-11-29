@@ -6,13 +6,13 @@
 /*   By: amarabin <amarabin@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/29 05:25:22 by amarabin          #+#    #+#             */
-/*   Updated: 2023/11/29 08:55:40 by amarabin         ###   ########.fr       */
+/*   Updated: 2023/11/29 10:20:12 by amarabin         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minishell.h"
 
-static t_env	*create_env_var_node(const char *str)
+static t_env	*create_env_var_node(char *str)
 {
 	char	*eq_sign_pos;
 	t_env	*node;
@@ -80,34 +80,47 @@ t_env	*init_env_var(char *envp[])
  * 0 = memory failure
  * 1 = success
  */
-int	set_env(t_env *head, char *var, char *value)
+int	set_env(t_env **head, char *key_val_str)
 {
 	t_env	*current;
 	t_env	*new_node;
+	char	*eq_sign_pos;
 
-	current = head;
+	eq_sign_pos = ft_strchr(key_val_str, '=');
+	if (!eq_sign_pos)
+	{
+		return (1);
+	}
+	current = *head;
 	while (current != NULL)
 	{
-		if (!ft_strncmp(current->key, var, ft_strlen(var)))
+		if (!ft_strncmp(current->key, key_val_str, eq_sign_pos - key_val_str))
 		{
 			free(current->value);
-			current->value = ft_strdup(value);
-			return (1);
+			current->value = ft_strdup(eq_sign_pos + 1);
+			return (current->value != NULL);
 		}
 		current = current->next;
 	}
-	new_node = malloc(sizeof(t_env));
-	if (new_node == NULL)
+	new_node = create_env_var_node(key_val_str);
+	if (!new_node)
 		return (0);
-	new_node->key = strdup(var);
-	new_node->value = strdup(value);
-	new_node->next = NULL;
-	while (head->next != NULL)
-		head = head->next;
-	head->next = new_node;
+	if (*head == NULL)
+		*head = new_node;
+	else
+	{
+		current = *head;
+		while (current->next != NULL)
+			current = current->next;
+		current->next = new_node;
+	}
 	return (1);
 }
 
+/**
+ * 0 = not updated
+ * 1 = updated
+ */
 int	unset_env(t_env **head, char *var)
 {
 	t_env	*current;
@@ -154,7 +167,7 @@ void	free_envp(char **envp, int i)
 	free(envp);
 }
 
-char	**prepare_enelope_for_execve(t_env *head)
+char	**prepare_envp_for_execve(t_env *head)
 {
 	int		size;
 	char	**envp;
@@ -178,4 +191,18 @@ char	**prepare_enelope_for_execve(t_env *head)
 	}
 	envp[size] = NULL;
 	return (envp);
+}
+
+void	print_env_var_list(t_env *head)
+{
+	t_env	*current;
+
+	current = head;
+	while (current != NULL)
+	{
+		ft_putstr_fd(current->key, STDOUT_FILENO, false);
+		ft_putstr_fd("=", STDOUT_FILENO, false);
+		ft_putstr_fd(current->value, STDOUT_FILENO, true);
+		current = current->next; // Move to the next node
+	}
 }

@@ -6,7 +6,7 @@
 /*   By: amarabin <amarabin@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/28 07:46:42 by amarabin          #+#    #+#             */
-/*   Updated: 2023/11/29 09:17:02 by amarabin         ###   ########.fr       */
+/*   Updated: 2023/11/29 10:19:11 by amarabin         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 
 void	handle_signal(int sig)
 {
-	if(sig == SIGINT)
+	if (sig == SIGINT)
 	{
 		ft_putstr_fd("\n", STDOUT_FILENO, true);
 		rl_on_new_line();
@@ -109,7 +109,7 @@ int	execute_echo(t_token **cmd, int i)
  * 0 = exit
  * -1 = memory failure
  */
-int	execute_cmd_line(char *line)
+int	execute_cmd_line(char *line, t_env *env_var_list)
 {
 	t_token	**cmd;
 	int		i;
@@ -141,6 +141,26 @@ int	execute_cmd_line(char *line)
 				if (cmd[i] != NULL)
 					i++;
 			}
+			else if (!ft_strncmp(cmd[i]->value, "export", 6)
+				&& ft_strlen(cmd[i]->value) == 6)
+			{
+				if (cmd[i + 1] && cmd[i + 1]->is_param && !set_env(&env_var_list, cmd[i + 1]->value))
+					return (-1);
+				i += 2;
+			}
+			else if (!ft_strncmp(cmd[i]->value, "unset", 5)
+				&& ft_strlen(cmd[i]->value) == 5)
+			{
+				if (cmd[i + 1] && cmd[i + 1]->is_param)
+					unset_env(&env_var_list, cmd[i + 1]->value); //return value doesn't count here
+				i += 2;
+			}
+			else if (!ft_strncmp(cmd[i]->value, "env", 3)
+				&& ft_strlen(cmd[i]->value) == 3)
+			{
+				print_env_var_list(env_var_list);
+				i++;
+			}
 			else if (!ft_strncmp(cmd[i]->value, "exit", 4))
 				return (0);
 			else
@@ -151,15 +171,15 @@ int	execute_cmd_line(char *line)
 	return (i);
 }
 
-int main(int argc, char **argv, char *envp[])
+int	main(int argc, char **argv, char *envp[])
 {
 	char				*input;
 	struct sigaction	sa_sigint;
 	int					ret;
 	t_env				*env_var_list;
 
-    (void)argc;
-    (void)argv;
+	(void)argc;
+	(void)argv;
 	sa_sigint.sa_handler = handle_signal;
 	sa_sigint.sa_flags = 0;
 	sigaction(SIGINT, &sa_sigint, NULL);
@@ -173,12 +193,12 @@ int main(int argc, char **argv, char *envp[])
 		if (*input)
 		{
 			add_history(input);
-			ret = execute_cmd_line(input);
+			ret = execute_cmd_line(input, env_var_list);
 			if (!ret)
 				break ;
 			else if (ret == -1)
 			{
-				// ///Mem prot Error ft_putstr_fd("Error\n", STDOUT_FILENO, false);
+				// ///Mem prot Error ft_putstr_fd("Error\n...
 				break ;
 			}
 		}
