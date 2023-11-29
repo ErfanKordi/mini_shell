@@ -1,37 +1,18 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ms_split.c                                         :+:      :+:    :+:   */
+/*   split_cmd_line.c                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: amarabin <amarabin@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/18 04:16:25 by amarabin          #+#    #+#             */
-/*   Updated: 2023/11/21 07:43:38 by amarabin         ###   ########.fr       */
+/*   Updated: 2023/11/29 09:19:00 by amarabin         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "minishell.h"
 
-typedef struct s_token
-{
-	bool		is_cmd;
-	bool		is_option;
-	bool		is_param;
-	bool		is_input_redirection;
-	bool		is_output_redirection;
-	bool		is_pipe;
-	bool		is_append_mode;
-	bool		is_background;
-	bool		is_cmd_separator;
-	bool		is_escaped;
-	bool		is_quoted;
-	char		*value;
-}				t_token;
-
-void	free_matrix(t_token **tokens)
+void	free_token_matrix(t_token **tokens)
 {
 	size_t	i;
 
@@ -47,45 +28,20 @@ void	free_matrix(t_token **tokens)
 	free(tokens);
 }
 
-static char	get_escaped_char(const char *s)
-{
-	s++;
-	if (*s == 'n')
-		return ('\n');
-	else if (*s == 't')
-		return ('\t');
-	else if (*s == 'a')
-		return ('\a');
-	else if (*s == '0')
-		return ('\0');
-	else
-		return (*s);
-}
-
-static char	*get_between(const char *start, const char *end)
-{
-	char	*word;
-	size_t	i;
-
-	word = (char *)malloc((end - start + 2) * sizeof(char));
-	if (!word)
-		return (NULL);
-	i = 0;
-	while (*start && start <= end)
-	{
-		if (*start == '\\')
-		{
-			word[i] = get_escaped_char(start);
-			start++;
-		}
-		else
-			word[i] = *start;
-		start++;
-		i++;
-	}
-	word[i] = '\0';
-	return (word);
-}
+// static char	get_escaped_char(const char *s)
+// {
+// 	s++;
+// 	if (*s == 'n')
+// 		return ('\n');
+// 	else if (*s == 't')
+// 		return ('\t');
+// 	else if (*s == 'a')
+// 		return ('\a');
+// 	else if (*s == '0')
+// 		return ('\0');
+// 	else
+// 		return (*s);
+// }
 
 static size_t	count_tokens(const char *s, bool *in_quotes)
 {
@@ -146,16 +102,18 @@ static t_token	**generate_matrix(const char *s)
 	if (!tokens)
 		return (NULL);
 	tokens[word_count] = NULL;
+	//printf("word_count: %zu\n", word_count);
 	return (tokens);
 }
 
 static t_token	**fill_matrix(const char *s, t_token **tokens)
 {
 	const char	*p;
+	char 		*tmp;
 	size_t		i;
-	size_t		j;
 	char		current_quote;
 	bool		new_cmd;
+	bool		single_quoted;
 
 	i = 0;
 	new_cmd = true;
@@ -172,11 +130,10 @@ static t_token	**fill_matrix(const char *s, t_token **tokens)
 		tokens[i++] = (t_token *)malloc(sizeof(t_token));
 		if (!tokens[i - 1])
 		{
-			free_matrix(tokens);
+			free_token_matrix(tokens);
 			return (NULL);
 		}
-		*(tokens[i - 1]) = (t_token){false, false, false, false, false, false,
-			false, NULL};
+		*(tokens[i - 1]) = (t_token){false, false, false, false, false, false, false, false, false, false, false, NULL};
 		if (*s == '\\')
 		{
 			p = s + 1;
@@ -184,13 +141,15 @@ static t_token	**fill_matrix(const char *s, t_token **tokens)
 		}
 		else if ((*s == '\'' || *s == '\"'))
 		{
+			tokens[i - 1]->is_quoted = true;
+			tokens[i - 1]->is_param = true;
 			current_quote = *s;
 			p = s + 1;
 			while (*p && *p != current_quote)
 				p++;
 			if (!(*p))
 			{
-				free_matrix(tokens);
+				free_token_matrix(tokens);
 				return (NULL);
 			}
 			tokens[i - 1]->is_quoted = true;
@@ -241,15 +200,48 @@ static t_token	**fill_matrix(const char *s, t_token **tokens)
 				tokens[i - 1]->is_param = true;
 			new_cmd = false;
 		}
-		tokens[i - 1]->value = get_between(s, p);
+		tokens[i - 1]->value = ft_strgetbetween(s, p);
+		if (tokens[i - 1]->value == NULL)
+			return (free_token_matrix(tokens), NULL);
+		if (tokens[i - 1]->is_param && tokens[i - 1]->value[0] == '$')
+		{
+			tmp = getenv(tokens[i - 1]->value);
+			if (tmp != NULL)
+			{
+				free(tokens[i - 1]->value);
+				tokens[i - 1]->value = ft_strdup(tmp);
+				if (tokens[i - 1]->value == NULL)
+					return (free_token_matrix(tokens), NULL);
+			}
+		}
+		else if (tokens[i - 1]->is_param && tokens[i - 1]->is_quoted)
+		{
+			tmp = tokens[i - 1]->value;
+			if (tokens[i - 1]->value[0] == '\"')
+			{
+				single_quoted = false;
+				tokens[i - 1]->value = ft_strtrim(tokens[i - 1]->value, "\"");
+			}
+			else
+			{
+				single_quoted = true;
+				tokens[i - 1]->value = ft_strtrim(tokens[i - 1]->value, "\"");
+			}
+			if (tokens[i - 1]->value == NULL)
+				return (free(tmp), free_token_matrix(tokens), NULL);
+			free(tmp);
+			// if is single quoted variables should not be expanded
+			// if is doublequoted parsing should be applied
+		}
 		s = p;
 		if (*s)
 			s++;
 	}
+	tokens[i] = NULL;
 	return (tokens);
 }
 
-t_token	**split_cmd_line(const char *s)
+t_token	**split_cmd_line(char *s)
 {
 	t_token	**tokens;
 
@@ -261,78 +253,78 @@ t_token	**split_cmd_line(const char *s)
 	return (fill_matrix(s, tokens));
 }
 
-int	main(void)
-{
-	t_token	**tokens;
+// int	main(void)
+// {
+// 	t_token	**tokens;
 
-	char *test_cases[] = {
-		"echo Hello World",                  // Simple command
-		"ls -l | grep 'txt'",                // Pipe and single quotes
-		"cat \"file name with spaces.txt\"", // Double quotes
-		"grep \\| filename",                 // Escaped character
-		"find . -name \\*.c",                // Escaped wildcard
-		"echo 'Single quote with a \\ backslash'",
-		// Escaped char in single quotes
-		"echo \"Double quote with a \\ backslash\"",
-		// Escaped char in double quotes
-		"command > output.txt",  // Redirection
-		"command < input.txt",   // Input redirection
-		"command >> append.txt", // Append redirection
-		"command1 && command2",  // Logical AND
-		"command1 || command2",  // Logical OR
-		"ls -l \"My Documents\" 'Backup Folder'",
-		"grep -E \"^a\\w*\" sample.txt | sort",
-		"echo \"This is a test\" && echo 'Another test'",
-		"mkdir -p /tmp/test\\ folder",
-		"find . -name \"*.txt\" -exec cat {} \\;",
-		"echo \"Nested \\\"quotes\\\" here\"",
-		"curl -X POST http://example.com/api -d '{\"key\": \"value\"}'",
-		"tar -czf backup.tar.gz --exclude='*.tmp' /home/user/Documents",
-		"awk 'BEGIN {FS=\",\"; OFS=\"\\t\"} {print $1, $2}' data.csv",
-		"python -c 'import os; print(os.listdir(\".\"))'",
-		NULL // Sentinel value
-	};
-	for (int i = 0; test_cases[i] != NULL; ++i)
-	{
-		printf("Test Case %d: \"%s\"\n", i + 1, test_cases[i]);
-		tokens = split_cmd_line(test_cases[i]);
-		if (tokens)
-		{
-			for (int j = 0; tokens[j] != NULL; ++j)
-			{
-				printf("\tToken %d: \"%s\" ", j + 1, tokens[j]->value);
-				// Check and print only true flags
-				if (tokens[j]->is_cmd)
-					printf("Cmd ");
-				if (tokens[j]->is_option)
-					printf("Opt ");
-				if (tokens[j]->is_param)
-					printf("Param ");
-				if (tokens[j]->is_input_redirection)
-					printf("InRedir ");
-				if (tokens[j]->is_output_redirection)
-					printf("OutRedir ");
-				if (tokens[j]->is_pipe)
-					printf("Pipe ");
-				if (tokens[j]->is_append_mode)
-					printf("Append ");
-				if (tokens[j]->is_background)
-					printf("Background ");
-				if (tokens[j]->is_cmd_separator)
-					printf("CmdSep ");
-				if (tokens[j]->is_escaped)
-					printf("Escaped ");
-				if (tokens[j]->is_quoted)
-					printf("Quoted ");
-				printf("\n"); // New line after listing all true flags
-			}
-			free_matrix(tokens);
-		}
-		else
-		{
-			printf("\tError in tokenizing or in-quotes string found\n");
-		}
-		printf("\n");
-	}
-	return (0);
-}
+// 	char *test_cases[] = {
+// 		"echo Hello World",                  // Simple command
+// 		"ls -l | grep 'txt'",                // Pipe and single quotes
+// 		"cat \"file name with spaces.txt\"", // Double quotes
+// 		"grep \\| filename",                 // Escaped character
+// 		"find . -name \\*.c",                // Escaped wildcard
+// 		"echo 'Single quote with a \\ backslash'",
+// 		// Escaped char in single quotes
+// 		"echo \"Double quote with a \\ backslash\"",
+// 		// Escaped char in double quotes
+// 		"command > output.txt",  // Redirection
+// 		"command < input.txt",   // Input redirection
+// 		"command >> append.txt", // Append redirection
+// 		"command1 && command2",  // Logical AND
+// 		"command1 || command2",  // Logical OR
+// 		"ls -l \"My Documents\" 'Backup Folder'",
+// 		"grep -E \"^a\\w*\" sample.txt | sort",
+// 		"echo \"This is a test\" && echo 'Another test'",
+// 		"mkdir -p /tmp/test\\ folder",
+// 		"find . -name \"*.txt\" -exec cat {} \\;",
+// 		"echo \"Nested \\\"quotes\\\" here\"",
+// 		"curl -X POST http://example.com/api -d '{\"key\": \"value\"}'",
+// 		"tar -czf backup.tar.gz --exclude='*.tmp' /home/user/Documents",
+// 		"awk 'BEGIN {FS=\",\"; OFS=\"\\t\"} {print $1, $2}' data.csv",
+// 		"python -c 'import os; print(os.listdir(\".\"))'",
+// 		NULL // Sentinel value
+// 	};
+// 	for (int i = 0; test_cases[i] != NULL; ++i)
+// 	{
+// 		printf("Test Case %d: \"%s\"\n", i + 1, test_cases[i]);
+// 		tokens = split_cmd_line(test_cases[i]);
+// 		if (tokens)
+// 		{
+// 			for (int j = 0; tokens[j] != NULL; ++j)
+// 			{
+// 				printf("\tToken %d: \"%s\" ", j + 1, tokens[j]->value);
+// 				// Check and print only true flags
+// 				if (tokens[j]->is_cmd)
+// 					printf("Cmd ");
+// 				if (tokens[j]->is_option)
+// 					printf("Opt ");
+// 				if (tokens[j]->is_param)
+// 					printf("Param ");
+// 				if (tokens[j]->is_input_redirection)
+// 					printf("InRedir ");
+// 				if (tokens[j]->is_output_redirection)
+// 					printf("OutRedir ");
+// 				if (tokens[j]->is_pipe)
+// 					printf("Pipe ");
+// 				if (tokens[j]->is_append_mode)
+// 					printf("Append ");
+// 				if (tokens[j]->is_background)
+// 					printf("Background ");
+// 				if (tokens[j]->is_cmd_separator)
+// 					printf("CmdSep ");
+// 				if (tokens[j]->is_escaped)
+// 					printf("Escaped ");
+// 				if (tokens[j]->is_quoted)
+// 					printf("Quoted ");
+// 				printf("\n"); // New line after listing all true flags
+// 			}
+// 			free_token_matrix(tokens);
+// 		}
+// 		else
+// 		{
+// 			printf("\tError in tokenizing or in-quotes string found\n");
+// 		}
+// 		printf("\n");
+// 	}
+// 	return (0);
+// }
