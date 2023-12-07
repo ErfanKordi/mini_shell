@@ -3,26 +3,26 @@
 /*                                                        :::      ::::::::   */
 /*   minishell.h                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: amarabin <amarabin@student.42.fr>          +#+  +:+       +#+        */
+/*   By: ekordi <ekordi@student.42heilbronn.de>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/28 07:43:24 by amarabin          #+#    #+#             */
-/*   Updated: 2023/11/29 10:21:30 by amarabin         ###   ########.fr       */
+/*   Updated: 2023/12/06 16:34:59 by ekordi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef MINISHELL_H
 # define MINISHELL_H
 
-# include <stdio.h>
-# include <readline/history.h>
-# include <readline/readline.h>
 # include <signal.h>
 # include <stdbool.h>
+# include <stdio.h>
 # include <stdlib.h>
 # include <string.h>
 # include <sys/ioctl.h>
 # include <sys/types.h>
 # include <unistd.h>
+# include <readline/history.h>
+# include <readline/readline.h>
 
 typedef struct s_token
 {
@@ -49,6 +49,13 @@ typedef struct s_env
 
 t_token				**split_cmd_line(char *s);
 void				free_token_matrix(t_token **tokens);
+void				execute(char *argv, char **envp);
+char				**ft_split(const char *s, char c);
+void				free_arrayofstrings(char **a);
+char				*ft_substr(char const *s, unsigned int start, size_t len);
+void				*ft_calloc(size_t count, size_t size);
+void				ft_bzero(void *s, int n);
+char	*ft_strnstr( char *s1,  char *s2, size_t n);
 
 char				*ft_strdup(const char *s);
 void				ft_putchar_fd(char c, int fd);

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.c                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: amarabin <amarabin@student.42.fr>          +#+  +:+       +#+        */
+/*   By: ekordi <ekordi@student.42heilbronn.de>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/28 07:46:42 by amarabin          #+#    #+#             */
-/*   Updated: 2023/11/29 10:19:11 by amarabin         ###   ########.fr       */
+/*   Updated: 2023/12/07 13:58:37 by ekordi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -109,7 +109,7 @@ int	execute_echo(t_token **cmd, int i)
  * 0 = exit
  * -1 = memory failure
  */
-int	execute_cmd_line(char *line, t_env *env_var_list)
+int	execute_cmd_line(char *line, t_env *env_var_list, char **env)
 {
 	t_token	**cmd;
 	int		i;
@@ -164,7 +164,10 @@ int	execute_cmd_line(char *line, t_env *env_var_list)
 			else if (!ft_strncmp(cmd[i]->value, "exit", 4))
 				return (0);
 			else
-				return (1);
+				{
+					execute(cmd[i]->value, env);
+					i++;
+				}
 		}
 	}
 	free_token_matrix(cmd);
@@ -193,7 +196,7 @@ int	main(int argc, char **argv, char *envp[])
 		if (*input)
 		{
 			add_history(input);
-			ret = execute_cmd_line(input, env_var_list);
+			ret = execute_cmd_line(input, env_var_list, envp);
 			if (!ret)
 				break ;
 			else if (ret == -1)
