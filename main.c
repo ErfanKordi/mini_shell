@@ -6,7 +6,7 @@
 /*   By: amarabin <amarabin@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/28 07:46:42 by amarabin          #+#    #+#             */
-/*   Updated: 2023/11/29 10:19:11 by amarabin         ###   ########.fr       */
+/*   Updated: 2023/12/04 04:19:47 by amarabin         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -114,7 +114,7 @@ int	execute_cmd_line(char *line, t_env *env_var_list)
 	t_token	**cmd;
 	int		i;
 
-	cmd = split_cmd_line(line);
+	cmd = split_cmd_line(line, env_var_list);
 	if (cmd == NULL)
 		return (0);
 	i = 0;

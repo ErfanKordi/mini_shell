@@ -6,18 +6,18 @@
 /*   By: amarabin <amarabin@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/28 07:43:24 by amarabin          #+#    #+#             */
-/*   Updated: 2023/11/29 10:21:30 by amarabin         ###   ########.fr       */
+/*   Updated: 2023/12/04 04:21:56 by amarabin         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef MINISHELL_H
 # define MINISHELL_H
 
-# include <stdio.h>
 # include <readline/history.h>
 # include <readline/readline.h>
 # include <signal.h>
 # include <stdbool.h>
+# include <stdio.h>
 # include <stdlib.h>
 # include <string.h>
 # include <sys/ioctl.h>
@@ -47,7 +47,7 @@ typedef struct s_env
 	struct s_env	*next;
 }					t_env;
 
-t_token				**split_cmd_line(char *s);
+t_token				**split_cmd_line(char *s, t_env *env_var_list);
 void				free_token_matrix(t_token **tokens);
 
 char				*ft_strdup(const char *s);
@@ -63,6 +63,7 @@ char				*ft_strgetbetween(const char *start, const char *end);
 char				**prepare_enelope_for_execve(t_env *head);
 int					unset_env(t_env **head, char *var);
 int					set_env(t_env **head, char *key_val_str);
+char				*get_env(t_env *head, const char *key);
 void				free_env_var_list(t_env *head);
 t_env				*init_env_var(char *envp[]);
 void				print_env_var_list(t_env *head);

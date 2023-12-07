@@ -6,7 +6,7 @@
 /*   By: amarabin <amarabin@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/18 04:16:25 by amarabin          #+#    #+#             */
-/*   Updated: 2023/11/29 09:19:00 by amarabin         ###   ########.fr       */
+/*   Updated: 2023/12/04 05:19:05 by amarabin         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,20 +28,66 @@ void	free_token_matrix(t_token **tokens)
 	free(tokens);
 }
 
-// static char	get_escaped_char(const char *s)
-// {
-// 	s++;
-// 	if (*s == 'n')
-// 		return ('\n');
-// 	else if (*s == 't')
-// 		return ('\t');
-// 	else if (*s == 'a')
-// 		return ('\a');
-// 	else if (*s == '0')
-// 		return ('\0');
-// 	else
-// 		return (*s);
-// }
+char	*parse_double_quoted_param(t_env *env_list, const char *input)
+{
+	int			length;
+	const char	*p = input;
+	char		*var_start;
+	char		*value;
+	char		*var_start;
+	char		*value;
+
+	length = 0;
+	char *result, *res_ptr;
+	char var_name[256];
+	while (*p)
+	{
+		if (*p == '$')
+		{
+			p++;
+			var_start = p;
+			while (ft_isalnum(*p) || *p == '_')
+				p++;
+			strncpy(var_name, var_start, p - var_start);
+			var_name[p - var_start] = '\0';
+			value = get_env(env_list, var_name);
+			length += strlen(value);
+		}
+		else
+		{
+			length++;
+			p++;
+		}
+	}
+	// Allocate memory for the final string
+	result = malloc(length + 1); // +1 for the null terminator
+	if (!result)
+		return (NULL);
+	// Build the final string
+	p = input;
+	res_ptr = result;
+	while (*p)
+	{
+		if (*p == '$')
+		{
+			p++;
+			var_start = p;
+			while (isalnum(*p) || *p == '_')
+				p++;
+			strncpy(var_name, var_start, p - var_start);
+			var_name[p - var_start] = '\0';
+			value = get_env(env_list, var_name);
+			strcpy(res_ptr, value);
+			res_ptr += strlen(value);
+		}
+		else
+		{
+			*res_ptr++ = *p++;
+		}
+	}
+	*res_ptr = '\0'; // Null-terminate the string
+	return (result);
+}
 
 static size_t	count_tokens(const char *s, bool *in_quotes)
 {
@@ -102,14 +148,15 @@ static t_token	**generate_matrix(const char *s)
 	if (!tokens)
 		return (NULL);
 	tokens[word_count] = NULL;
-	//printf("word_count: %zu\n", word_count);
+	// printf("word_count: %zu\n", word_count);
 	return (tokens);
 }
 
-static t_token	**fill_matrix(const char *s, t_token **tokens)
+static t_token	**fill_matrix(const char *s, t_token **tokens,
+		t_env *env_var_list)
 {
 	const char	*p;
-	char 		*tmp;
+	char		*tmp;
 	size_t		i;
 	char		current_quote;
 	bool		new_cmd;
@@ -133,7 +180,8 @@ static t_token	**fill_matrix(const char *s, t_token **tokens)
 			free_token_matrix(tokens);
 			return (NULL);
 		}
-		*(tokens[i - 1]) = (t_token){false, false, false, false, false, false, false, false, false, false, false, NULL};
+		*(tokens[i - 1]) = (t_token){false, false, false, false, false, false,
+			false, false, false, false, false, NULL};
 		if (*s == '\\')
 		{
 			p = s + 1;
@@ -205,7 +253,7 @@ static t_token	**fill_matrix(const char *s, t_token **tokens)
 			return (free_token_matrix(tokens), NULL);
 		if (tokens[i - 1]->is_param && tokens[i - 1]->value[0] == '$')
 		{
-			tmp = getenv(tokens[i - 1]->value);
+			tmp = get_env(tokens[i - 1]->value[1], env_var_list);
 			if (tmp != NULL)
 			{
 				free(tokens[i - 1]->value);
@@ -241,7 +289,7 @@ static t_token	**fill_matrix(const char *s, t_token **tokens)
 	return (tokens);
 }
 
-t_token	**split_cmd_line(char *s)
+t_token	**split_cmd_line(char *s, t_env *env_var_list)
 {
 	t_token	**tokens;
 
@@ -250,7 +298,7 @@ t_token	**split_cmd_line(char *s)
 	tokens = generate_matrix(s);
 	if (!tokens)
 		return (NULL);
-	return (fill_matrix(s, tokens));
+	return (fill_matrix(s, tokens, env_var_list));
 }
 
 // int	main(void)

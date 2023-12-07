@@ -6,7 +6,7 @@
 /*   By: amarabin <amarabin@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/29 05:25:22 by amarabin          #+#    #+#             */
-/*   Updated: 2023/11/29 10:20:12 by amarabin         ###   ########.fr       */
+/*   Updated: 2023/12/04 04:10:37 by amarabin         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -115,6 +115,20 @@ int	set_env(t_env **head, char *key_val_str)
 		current->next = new_node;
 	}
 	return (1);
+}
+
+char	*get_env(t_env *head, const char *key)
+{
+	t_env	*current;
+
+	current = head;
+	while (current != NULL)
+	{
+		if (!ft_strncmp(current->key, key, ft_strlen(key)))
+			return (current->value);
+		current = current->next;
+	}
+	return (NULL);
 }
 
 /**
