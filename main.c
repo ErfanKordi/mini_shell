@@ -6,7 +6,7 @@
 /*   By: amarabin <amarabin@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/28 07:46:42 by amarabin          #+#    #+#             */
-/*   Updated: 2023/12/04 04:19:47 by amarabin         ###   ########.fr       */
+/*   Updated: 2023/12/08 21:52:56 by amarabin         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,31 @@ void	handle_signal(int sig)
 		rl_on_new_line();
 		rl_replace_line("", 0);
 	}
+}
+
+int prepare_and_execute(t_token **cmd, int start_index, t_env *env_var_list)
+{
+	int	arg_count;
+	int	i;
+
+	i = start_index + 1;
+	arg_count = 0;
+	while (cmd[i] && cmd[i]->is_param) {
+		if (expand_token(cmd[i], env_var_list))
+			arg_count++;
+		i++;
+	}
+	char **argv = malloc((arg_count + 2) * sizeof(char *));
+	if (!argv) 
+		return (0);
+	argv[0] = cmd[start_index]->value;
+	i = 0;
+	while (i++ < arg_count)
+		argv[i] = cmd[start_index + i]->value;
+	argv[arg_count + 1] = NULL;
+	execute(cmd[start_index]->value, argv,  env_var_list);
+	free(argv);
+	return (start_index + arg_count + 1);
 }
 
 /**
@@ -114,7 +139,7 @@ int	execute_cmd_line(char *line, t_env *env_var_list)
 	t_token	**cmd;
 	int		i;
 
-	cmd = split_cmd_line(line, env_var_list);
+	cmd = split_cmd_line(line);
 	if (cmd == NULL)
 		return (0);
 	i = 0;
@@ -144,7 +169,8 @@ int	execute_cmd_line(char *line, t_env *env_var_list)
 			else if (!ft_strncmp(cmd[i]->value, "export", 6)
 				&& ft_strlen(cmd[i]->value) == 6)
 			{
-				if (cmd[i + 1] && cmd[i + 1]->is_param && !set_env(&env_var_list, cmd[i + 1]->value))
+				if (cmd[i + 1] && cmd[i + 1]->is_param && \
+						!set_env(&env_var_list, cmd[i + 1]->value))
 					return (-1);
 				i += 2;
 			}
@@ -152,7 +178,7 @@ int	execute_cmd_line(char *line, t_env *env_var_list)
 				&& ft_strlen(cmd[i]->value) == 5)
 			{
 				if (cmd[i + 1] && cmd[i + 1]->is_param)
-					unset_env(&env_var_list, cmd[i + 1]->value); //return value doesn't count here
+					unset_env(&env_var_list, cmd[i + 1]->value);
 				i += 2;
 			}
 			else if (!ft_strncmp(cmd[i]->value, "env", 3)
@@ -164,7 +190,11 @@ int	execute_cmd_line(char *line, t_env *env_var_list)
 			else if (!ft_strncmp(cmd[i]->value, "exit", 4))
 				return (0);
 			else
-				return (1);
+			{
+				i =  prepare_and_execute(cmd, i, env_var_list);
+				if(!i)
+					return (-1);
+			}
 		}
 	}
 	free_token_matrix(cmd);

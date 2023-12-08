@@ -6,11 +6,76 @@
 /*   By: amarabin <amarabin@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/28 10:11:03 by amarabin          #+#    #+#             */
-/*   Updated: 2023/11/29 06:09:23 by amarabin         ###   ########.fr       */
+/*   Updated: 2023/12/08 18:48:50 by amarabin         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minishell.h"
+
+void	ft_bzero(void *s, int n)
+{
+	int				c;
+	unsigned char	*p;
+
+	p = s;
+	c = 0;
+	while (n--)
+	{
+		p[c] = 0;
+		c++;
+	}
+}
+
+
+void	*ft_calloc(size_t count, size_t size)
+{
+	void	*ret;
+
+	ret = malloc(size * count);
+	if (!ret)
+		return (0);
+	ft_bzero(ret, size * count);
+	return (ret);
+}
+
+char	*ft_substr(char const *s, unsigned int start, size_t len)
+{
+	char	*r;
+	int		i;
+
+	if (!s)
+		return (NULL);
+	if (start >= ft_strlen(s))
+		return (ft_strdup(""));
+	if (len > ft_strlen(s) - start)
+		len = ft_strlen(s) - start;
+	i = 0;
+	r = (char *)malloc((len + 1) * sizeof(char));
+	if (!r)
+		return (NULL);
+	while (s[start] && len--)
+	{
+		r[i] = s[start];
+		i++;
+		start++;
+	}
+	r[i] = '\0';
+	return (r);
+}
+
+void	free_arrayofstrings(char **a)
+{
+	int	i;
+
+	i = 0;
+	while (a[i])
+	{
+		free(a[i]);
+		i++;
+	}
+	free(a);
+}
+
 void	*ft_memcpy(void *dest, const void *src, size_t n)
 {
 	char		*d;
@@ -86,6 +151,35 @@ char	*ft_strtrim(char const *s1, char const *set)
 	ft_strlcpy(trimmed, s1 + start, len + 1);
 	return (trimmed);
 }
+
+char	*ft_strnstr( char *s1,  char *s2, size_t n)
+{
+	size_t	s2_len;
+	size_t	i;
+	char	*p;
+
+	p = NULL;
+	s2_len = ft_strlen((char *)s2);
+	i = 0;
+	if (s1 == NULL)
+	{
+		*p = 0;
+	}
+	if (s2_len == 0)
+		return ((char *)s1);
+	if (n < s2_len)
+		return (NULL);
+	while (s1[i] != '\0')
+	{
+		if (ft_strncmp(&s1[i], s2, s2_len) == 0)
+			return ((char *)&s1[i]);
+		if (i + s2_len >= n)
+			break ;
+		i++;
+	}
+	return (NULL);
+}
+
 
 char	*ft_strdup(const char *s)
 {
@@ -204,4 +298,33 @@ char	*ft_strgetbetween(const char *start, const char *end)
 	}
 	word[i] = '\0';
 	return (word);
+}
+
+int ft_isalnum(int c)
+{
+	return ((c >= 'A' && c <= 'Z') || \
+			(c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'));
+}
+
+char	*ft_strrplbtwn(char *orig, char *new, char *start, char *end)
+{
+	size_t	head_len;
+	size_t	ncont_len;
+	size_t	tail_len;
+	char	*new_str;
+
+	if (!new)
+		new = "";
+	head_len = start - orig;
+	ncont_len = ft_strlen(new);
+	tail_len = ft_strlen(end + 1);
+	if (!orig || !start || !end || start > end)
+		return (NULL);
+	new_str = malloc(head_len + ncont_len + tail_len + 1);
+	if (!new_str)
+		return (NULL);
+	ft_strlcpy(new_str, orig, head_len + 1);
+	ft_strlcpy(new_str + head_len, new, ncont_len + 1);
+	ft_strlcpy(new_str + head_len + ncont_len, end + 1, tail_len + 1);
+	return (new_str);
 }

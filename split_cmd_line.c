@@ -6,7 +6,7 @@
 /*   By: amarabin <amarabin@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/18 04:16:25 by amarabin          #+#    #+#             */
-/*   Updated: 2023/12/04 05:19:05 by amarabin         ###   ########.fr       */
+/*   Updated: 2023/12/08 20:09:55 by amarabin         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,66 +28,6 @@ void	free_token_matrix(t_token **tokens)
 	free(tokens);
 }
 
-char	*parse_double_quoted_param(t_env *env_list, const char *input)
-{
-	int			length;
-	const char	*p = input;
-	char		*var_start;
-	char		*value;
-	char		*var_start;
-	char		*value;
-
-	length = 0;
-	char *result, *res_ptr;
-	char var_name[256];
-	while (*p)
-	{
-		if (*p == '$')
-		{
-			p++;
-			var_start = p;
-			while (ft_isalnum(*p) || *p == '_')
-				p++;
-			strncpy(var_name, var_start, p - var_start);
-			var_name[p - var_start] = '\0';
-			value = get_env(env_list, var_name);
-			length += strlen(value);
-		}
-		else
-		{
-			length++;
-			p++;
-		}
-	}
-	// Allocate memory for the final string
-	result = malloc(length + 1); // +1 for the null terminator
-	if (!result)
-		return (NULL);
-	// Build the final string
-	p = input;
-	res_ptr = result;
-	while (*p)
-	{
-		if (*p == '$')
-		{
-			p++;
-			var_start = p;
-			while (isalnum(*p) || *p == '_')
-				p++;
-			strncpy(var_name, var_start, p - var_start);
-			var_name[p - var_start] = '\0';
-			value = get_env(env_list, var_name);
-			strcpy(res_ptr, value);
-			res_ptr += strlen(value);
-		}
-		else
-		{
-			*res_ptr++ = *p++;
-		}
-	}
-	*res_ptr = '\0'; // Null-terminate the string
-	return (result);
-}
 
 static size_t	count_tokens(const char *s, bool *in_quotes)
 {
@@ -152,11 +92,9 @@ static t_token	**generate_matrix(const char *s)
 	return (tokens);
 }
 
-static t_token	**fill_matrix(const char *s, t_token **tokens,
-		t_env *env_var_list)
+static t_token	**fill_matrix(const char *s, t_token **tokens)
 {
 	const char	*p;
-	char		*tmp;
 	size_t		i;
 	char		current_quote;
 	bool		new_cmd;
@@ -181,7 +119,7 @@ static t_token	**fill_matrix(const char *s, t_token **tokens,
 			return (NULL);
 		}
 		*(tokens[i - 1]) = (t_token){false, false, false, false, false, false,
-			false, false, false, false, false, NULL};
+			false, false, false, false, false, false, NULL};
 		if (*s == '\\')
 		{
 			p = s + 1;
@@ -191,6 +129,10 @@ static t_token	**fill_matrix(const char *s, t_token **tokens,
 		{
 			tokens[i - 1]->is_quoted = true;
 			tokens[i - 1]->is_param = true;
+			if(*s == '\'')
+				single_quoted = true;
+			else
+				single_quoted = false;
 			current_quote = *s;
 			p = s + 1;
 			while (*p && *p != current_quote)
@@ -200,8 +142,6 @@ static t_token	**fill_matrix(const char *s, t_token **tokens,
 				free_token_matrix(tokens);
 				return (NULL);
 			}
-			tokens[i - 1]->is_quoted = true;
-			tokens[i - 1]->is_param = true;
 		}
 		else if (strchr(";|<>&", *s))
 		{
@@ -233,7 +173,7 @@ static t_token	**fill_matrix(const char *s, t_token **tokens,
 				p++;
 			if (*p == ' ' || *p == '\t')
 				p--;
-			tokens[i - 1]->is_option = true;
+			tokens[i - 1]->is_param = true;
 		}
 		else if (*s != ' ' && *s != '\t')
 		{
@@ -251,36 +191,6 @@ static t_token	**fill_matrix(const char *s, t_token **tokens,
 		tokens[i - 1]->value = ft_strgetbetween(s, p);
 		if (tokens[i - 1]->value == NULL)
 			return (free_token_matrix(tokens), NULL);
-		if (tokens[i - 1]->is_param && tokens[i - 1]->value[0] == '$')
-		{
-			tmp = get_env(tokens[i - 1]->value[1], env_var_list);
-			if (tmp != NULL)
-			{
-				free(tokens[i - 1]->value);
-				tokens[i - 1]->value = ft_strdup(tmp);
-				if (tokens[i - 1]->value == NULL)
-					return (free_token_matrix(tokens), NULL);
-			}
-		}
-		else if (tokens[i - 1]->is_param && tokens[i - 1]->is_quoted)
-		{
-			tmp = tokens[i - 1]->value;
-			if (tokens[i - 1]->value[0] == '\"')
-			{
-				single_quoted = false;
-				tokens[i - 1]->value = ft_strtrim(tokens[i - 1]->value, "\"");
-			}
-			else
-			{
-				single_quoted = true;
-				tokens[i - 1]->value = ft_strtrim(tokens[i - 1]->value, "\"");
-			}
-			if (tokens[i - 1]->value == NULL)
-				return (free(tmp), free_token_matrix(tokens), NULL);
-			free(tmp);
-			// if is single quoted variables should not be expanded
-			// if is doublequoted parsing should be applied
-		}
 		s = p;
 		if (*s)
 			s++;
@@ -289,7 +199,7 @@ static t_token	**fill_matrix(const char *s, t_token **tokens,
 	return (tokens);
 }
 
-t_token	**split_cmd_line(char *s, t_env *env_var_list)
+t_token	**split_cmd_line(char *s)
 {
 	t_token	**tokens;
 
@@ -298,7 +208,7 @@ t_token	**split_cmd_line(char *s, t_env *env_var_list)
 	tokens = generate_matrix(s);
 	if (!tokens)
 		return (NULL);
-	return (fill_matrix(s, tokens, env_var_list));
+	return (fill_matrix(s, tokens));
 }
 
 // int	main(void)

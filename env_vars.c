@@ -6,7 +6,7 @@
 /*   By: amarabin <amarabin@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/29 05:25:22 by amarabin          #+#    #+#             */
-/*   Updated: 2023/12/04 04:10:37 by amarabin         ###   ########.fr       */
+/*   Updated: 2023/12/08 18:49:32 by amarabin         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -117,7 +117,7 @@ int	set_env(t_env **head, char *key_val_str)
 	return (1);
 }
 
-char	*get_env(t_env *head, const char *key)
+char	*get_env(t_env *head, char *key)
 {
 	t_env	*current;
 
@@ -181,7 +181,7 @@ void	free_envp(char **envp, int i)
 	free(envp);
 }
 
-char	**prepare_envp_for_execve(t_env *head)
+char	**get_env_for_exe(t_env *head)
 {
 	int		size;
 	char	**envp;
@@ -217,6 +217,6 @@ void	print_env_var_list(t_env *head)
 		ft_putstr_fd(current->key, STDOUT_FILENO, false);
 		ft_putstr_fd("=", STDOUT_FILENO, false);
 		ft_putstr_fd(current->value, STDOUT_FILENO, true);
-		current = current->next; // Move to the next node
+		current = current->next;
 	}
 }
