@@ -6,14 +6,13 @@
 /*   By: ekordi <ekordi@student.42heilbronn.de>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/06 14:55:02 by ekordi            #+#    #+#             */
-/*   Updated: 2023/12/07 15:18:27 by ekordi           ###   ########.fr       */
+/*   Updated: 2023/12/11 11:56:52 by ekordi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minishell.h"
 
-
-char	*cmd_path(char *cmd, char **envp)
+char	*cmd_path(char *cmd, t_env *env)
 {
 	char	*temp;
 	char	**paths;
@@ -21,9 +20,7 @@ char	*cmd_path(char *cmd, char **envp)
 	char	*path;
 
 	i = 0;
-	while (ft_strnstr(envp[i], "PATH", 4) == 0)
-		i++;
-	paths = ft_split(envp[i] + 5, ':');
+	paths = ft_split(get_env(env, "PATH"), ':');
 	i = 0;
 	while (paths[i])
 	{
@@ -41,17 +38,21 @@ char	*cmd_path(char *cmd, char **envp)
 	ft_putstr_fd("zsh: command not found: ", 2, false);
 	ft_putstr_fd(cmd, 2, true);
 	free_arrayofstrings(paths);
-	return NULL;
+	return (NULL);
 }
-void	execute(char *cmd, char **envp)
+
+void	execute(char *cmd, char **args, t_env *env, bool last_cmd, int *original_stdout)
 {
 	char	*path;
+	int pid1;
+	int		fd[2];
 
-	path = cmd_path(cmd, envp);
-	if(!path)
-		return ;
-	char *args[] = {cmd, NULL};
-	int pid1 = fork();
+	path = cmd_path(cmd, env);
+	if (path == NULL)
+		ft_putstr_fd("Path Error", 2, true);
+	if (pipe(fd) == -1)
+		ft_putstr_fd("Pipe Error", 2, true);
+	pid1 = fork();
 	if (pid1 < 0)
 	{
 		perror("fork");
@@ -59,8 +60,19 @@ void	execute(char *cmd, char **envp)
 	}
 	if (pid1 == 0)
 	{
-		if (execve(path, args, envp) == -1)
-		ft_putstr_fd("Exec Error", 2, true);
+		close(fd[0]);
+		dup2(fd[1], STDOUT_FILENO);
+		if (last_cmd)
+			dup2(original_stdout[0], STDOUT_FILENO);
+		if (execve(path, args, get_env_for_exe(env)) == -1)
+			ft_putstr_fd("Exec Error", 2, true);
 	}
-	waitpid(pid1, 0, 0);
+	else
+	{
+		close(fd[1]);
+		dup2(fd[0], STDIN_FILENO);
+		if (last_cmd)
+			dup2(original_stdout[1], STDIN_FILENO);
+		waitpid(pid1, NULL, 0);
+	}
 }

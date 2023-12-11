@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ft_utils.c                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: ekordi <ekordi@student.42heilbronn.de>     +#+  +:+       +#+        */
+/*   By: amarabin <amarabin@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/28 10:11:03 by amarabin          #+#    #+#             */
-/*   Updated: 2023/12/06 16:34:41 by ekordi           ###   ########.fr       */
+/*   Updated: 2023/12/08 18:48:50 by amarabin         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -298,4 +298,33 @@ char	*ft_strgetbetween(const char *start, const char *end)
 	}
 	word[i] = '\0';
 	return (word);
+}
+
+int ft_isalnum(int c)
+{
+	return ((c >= 'A' && c <= 'Z') || \
+			(c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'));
+}
+
+char	*ft_strrplbtwn(char *orig, char *new, char *start, char *end)
+{
+	size_t	head_len;
+	size_t	ncont_len;
+	size_t	tail_len;
+	char	*new_str;
+
+	if (!new)
+		new = "";
+	head_len = start - orig;
+	ncont_len = ft_strlen(new);
+	tail_len = ft_strlen(end + 1);
+	if (!orig || !start || !end || start > end)
+		return (NULL);
+	new_str = malloc(head_len + ncont_len + tail_len + 1);
+	if (!new_str)
+		return (NULL);
+	ft_strlcpy(new_str, orig, head_len + 1);
+	ft_strlcpy(new_str + head_len, new, ncont_len + 1);
+	ft_strlcpy(new_str + head_len + ncont_len, end + 1, tail_len + 1);
+	return (new_str);
 }

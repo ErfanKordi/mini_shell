@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   split_cmd_line.c                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: amarabin <amarabin@student.42.fr>          +#+  +:+       +#+        */
+/*   By: ekordi <ekordi@student.42heilbronn.de>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/18 04:16:25 by amarabin          #+#    #+#             */
-/*   Updated: 2023/11/29 09:19:00 by amarabin         ###   ########.fr       */
+/*   Updated: 2023/12/10 18:39:04 by ekordi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,20 +28,6 @@ void	free_token_matrix(t_token **tokens)
 	free(tokens);
 }
 
-// static char	get_escaped_char(const char *s)
-// {
-// 	s++;
-// 	if (*s == 'n')
-// 		return ('\n');
-// 	else if (*s == 't')
-// 		return ('\t');
-// 	else if (*s == 'a')
-// 		return ('\a');
-// 	else if (*s == '0')
-// 		return ('\0');
-// 	else
-// 		return (*s);
-// }
 
 static size_t	count_tokens(const char *s, bool *in_quotes)
 {
@@ -102,14 +88,13 @@ static t_token	**generate_matrix(const char *s)
 	if (!tokens)
 		return (NULL);
 	tokens[word_count] = NULL;
-	//printf("word_count: %zu\n", word_count);
+	// printf("word_count: %zu\n", word_count);
 	return (tokens);
 }
 
 static t_token	**fill_matrix(const char *s, t_token **tokens)
 {
 	const char	*p;
-	char 		*tmp;
 	size_t		i;
 	char		current_quote;
 	bool		new_cmd;
@@ -133,7 +118,8 @@ static t_token	**fill_matrix(const char *s, t_token **tokens)
 			free_token_matrix(tokens);
 			return (NULL);
 		}
-		*(tokens[i - 1]) = (t_token){false, false, false, false, false, false, false, false, false, false, false, NULL};
+		*(tokens[i - 1]) = (t_token){false, false, false, false, false, false,
+			false, false, false, false, false, false, NULL};
 		if (*s == '\\')
 		{
 			p = s + 1;
@@ -143,6 +129,10 @@ static t_token	**fill_matrix(const char *s, t_token **tokens)
 		{
 			tokens[i - 1]->is_quoted = true;
 			tokens[i - 1]->is_param = true;
+			if(*s == '\'')
+				single_quoted = true;
+			else
+				single_quoted = false;
 			current_quote = *s;
 			p = s + 1;
 			while (*p && *p != current_quote)
@@ -152,8 +142,6 @@ static t_token	**fill_matrix(const char *s, t_token **tokens)
 				free_token_matrix(tokens);
 				return (NULL);
 			}
-			tokens[i - 1]->is_quoted = true;
-			tokens[i - 1]->is_param = true;
 		}
 		else if (strchr(";|<>&", *s))
 		{
@@ -185,7 +173,7 @@ static t_token	**fill_matrix(const char *s, t_token **tokens)
 				p++;
 			if (*p == ' ' || *p == '\t')
 				p--;
-			tokens[i - 1]->is_option = true;
+			tokens[i - 1]->is_param = true;
 		}
 		else if (*s != ' ' && *s != '\t')
 		{
@@ -203,36 +191,6 @@ static t_token	**fill_matrix(const char *s, t_token **tokens)
 		tokens[i - 1]->value = ft_strgetbetween(s, p);
 		if (tokens[i - 1]->value == NULL)
 			return (free_token_matrix(tokens), NULL);
-		if (tokens[i - 1]->is_param && tokens[i - 1]->value[0] == '$')
-		{
-			tmp = getenv(tokens[i - 1]->value);
-			if (tmp != NULL)
-			{
-				free(tokens[i - 1]->value);
-				tokens[i - 1]->value = ft_strdup(tmp);
-				if (tokens[i - 1]->value == NULL)
-					return (free_token_matrix(tokens), NULL);
-			}
-		}
-		else if (tokens[i - 1]->is_param && tokens[i - 1]->is_quoted)
-		{
-			tmp = tokens[i - 1]->value;
-			if (tokens[i - 1]->value[0] == '\"')
-			{
-				single_quoted = false;
-				tokens[i - 1]->value = ft_strtrim(tokens[i - 1]->value, "\"");
-			}
-			else
-			{
-				single_quoted = true;
-				tokens[i - 1]->value = ft_strtrim(tokens[i - 1]->value, "\"");
-			}
-			if (tokens[i - 1]->value == NULL)
-				return (free(tmp), free_token_matrix(tokens), NULL);
-			free(tmp);
-			// if is single quoted variables should not be expanded
-			// if is doublequoted parsing should be applied
-		}
 		s = p;
 		if (*s)
 			s++;
