@@ -6,7 +6,7 @@
 /*   By: ekordi <ekordi@student.42heilbronn.de>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/28 07:43:24 by amarabin          #+#    #+#             */
-/*   Updated: 2023/12/11 11:55:50 by ekordi           ###   ########.fr       */
+/*   Updated: 2023/12/11 15:17:58 by ekordi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,7 +50,7 @@ typedef struct s_env
 
 t_token				**split_cmd_line(char *s);
 void				free_token_matrix(t_token **tokens);
-void				execute(char *cmd, char **argv, t_env *env, bool last_cmd, int *original_stdout);
+void				execute(char **argv, t_env *env, bool last_cmd, int *original_std_fd, t_token *cmd);
 char				**ft_split(const char *s, char c);
 void				free_arrayofstrings(char **a);
 char				*ft_substr(char const *s, unsigned int start, size_t len);
@@ -58,6 +58,8 @@ void				*ft_calloc(size_t count, size_t size);
 void				ft_bzero(void *s, int n);
 char				*ft_strnstr(char *s1, char *s2, size_t n);
 char				*cmd_path(char *cmd, t_env *env);
+int	execute_pwd(void);
+int built_in_cmds(char **args, t_env *env, t_token *cmd);
 
 
 char				*ft_strdup(const char *s);
